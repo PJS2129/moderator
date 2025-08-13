@@ -1,0 +1,250 @@
+import React, { useState, useEffect } from 'react';
+
+// --- SVG 아이콘 컴포넌트 ---
+const Icon = ({ name, className }) => {
+    const icons = {
+        user: (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        ),
+        trust: (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+        ),
+        users: (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+        ),
+        revenue: (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+        ),
+    };
+    return icons[name];
+};
+
+// --- 게임 데이터 (15일치로 확장) ---
+const gameCases = [
+    { id: 1, user: "건강전도사123", content: "레몬즙을 매일 마시면 모든 암을 예방할 수 있습니다! 이건 대형 제약사들이 숨기는 비밀 정보입니다. #건강 #의학상식", reportReason: "허위 건강 정보", choices: [{ text: "승인", consequences: { trust: -15, users: +5, revenue: +5 }, explanation: "자극적인 정보가 퍼지며 단기적인 트래픽은 늘었지만, 플랫폼의 신뢰도가 크게 하락했습니다." },{ text: "삭제", consequences: { trust: +10, users: -5, revenue: -5 }, explanation: "신뢰도를 지켰지만, 일부 사용자들이 '표현의 자유 억압'이라며 반발하여 떠났습니다." }] },
+    { id: 2, user: "영화광팬", content: "어제 개봉한 영화 '스페이스 워리어 5' 결말 장면입니다. 못 보신 분들 빨리 보세요! (영상 파일 첨부)", reportReason: "저작권 침해 (스포일러)", choices: [{ text: "승인", consequences: { trust: -20, users: +10, revenue: -20 }, explanation: "사용자들은 환호했지만, 영화 제작사로부터 거액의 소송을 당해 신뢰도와 수익이 폭락했습니다." },{ text: "삭제", consequences: { trust: +10, users: -5, revenue: +5 }, explanation: "법적 리스크를 피하고 창작자의 권리를 보호하여 플랫폼의 신뢰도가 상승했습니다." }] },
+    { id: 3, user: "정의의사도", content: "요즘 신입생 '김민지' 완전 이상하지 않아? 걔가 지난 동아리에서 돈 훔쳤다는 소문이 있던데? 다들 조심해. #신입생 #소문", reportReason: "명예훼손 및 사이버 불링", choices: [{ text: "승인", consequences: { trust: -25, users: -15, revenue: 0 }, explanation: "근거 없는 비방이 확산되며 플랫폼은 '안전하지 않은 공간'으로 인식되었고, 많은 사용자들이 떠났습니다." },{ text: "삭제", consequences: { trust: +15, users: +5, revenue: 0 }, explanation: "사용자 보호 원칙을 지켜 플랫폼의 신뢰도가 크게 상승했고, 안전한 커뮤니티라는 인식이 생겼습니다." }] },
+    { id: 4, user: "애국청년", content: "A국의 모든 제품은 우리를 감시하기 위한 스파이칩을 내장하고 있습니다. A국 제품을 쓰는 사람은 모두 매국노입니다!", reportReason: "혐오 발언", choices: [{ text: "승인", consequences: { trust: -20, users: -10, revenue: -10 }, explanation: "특정 집단에 대한 혐오를 방치하여 사회적 논란을 일으켰고, 광고주들이 광고를 중단했습니다." },{ text: "삭제", consequences: { trust: +10, users: 0, revenue: +5 }, explanation: "건강한 커뮤니티 환경을 조성하여 플랫폼의 이미지를 지켰습니다." }] },
+    { id: 5, user: "게임스트리머_알파", content: "제 방송 하이라이트입니다! 경쟁 스트리머 '베타'는 따라올 수 없는 플레이죠. 베타는 실력도 없으면서 운으로 큰 거 다들 아시죠?", reportReason: "타인 비방", choices: [{ text: "판단 보류", consequences: { trust: -5, users: +5, revenue: +5 }, explanation: "팬들 사이의 논쟁으로 트래픽은 증가했지만, 갈등을 방치했다는 비판으로 신뢰도가 소폭 하락했습니다." },{ text: "삭제", consequences: { trust: +5, users: -5, revenue: -5 }, explanation: "건전한 경쟁 문화를 지향한다는 인상을 주었지만, 일부 팬들이 '과한 검열'이라며 불만을 표했습니다." }] },
+    { id: 6, user: "AI_Artisan", content: "유명 화가 '반 고흐'의 스타일로 그린 AI 그림입니다. 어떤가요? #AI아트 #예술의미래", reportReason: "AI 생성물의 저작권 논란", choices: [{ text: "승인", consequences: { trust: -10, users: +10, revenue: +5 }, explanation: "AI 예술가들은 환호했지만, 기존 창작자들은 '스타일 도용'이라며 강력하게 반발하여 신뢰도가 하락했습니다." },{ text: "삭제", consequences: { trust: +5, users: -10, revenue: -5 }, explanation: "기존 창작자들을 보호했지만, AI 기술 커뮤니티로부터 '혁신을 막는다'는 비판을 받았습니다." }] },
+    { id: 7, user: "진실추적자", content: "최근 논란이 된 'XXX'의 신상 정보입니다. 이런 사람은 사회에 알려져야 합니다. (이름, 학교, 주소 포함)", reportReason: "신상 정보 유출 (Doxxing)", choices: [{ text: "승인", consequences: { trust: -30, users: -20, revenue: -15 }, explanation: "사적 제재를 방치한 플랫폼이라는 오명을 썼습니다. 심각한 법적 문제와 함께 사용자들이 대거 이탈했습니다." },{ text: "삭제", consequences: { trust: +15, users: +5, revenue: 0 }, explanation: "개인정보 보호라는 중요한 원칙을 지켜 플랫폼의 신뢰도를 높였습니다." }] },
+    { id: 8, user: "뷰티인플루언서", content: "이 '기적의 크림'만 바르면 3일 만에 아기 피부가 돼요! 효과 없으면 100% 환불! #광고 #뷰티템", reportReason: "허위/과장 광고", choices: [{ text: "승인", consequences: { trust: -15, users: -10, revenue: +10 }, explanation: "단기적인 광고 수익은 얻었지만, 제품 효과에 대한 사용자들의 불만이 폭주하며 플랫폼 신뢰도가 하락했습니다." },{ text: "삭제", consequences: { trust: +10, users: 0, revenue: -10 }, explanation: "사용자를 기만적인 광고로부터 보호했습니다. 광고 수익은 줄었지만 신뢰도는 지켰습니다." }] },
+    { id: 9, user: "역사교육TV", content: "세종대왕님이 직접 훈민정음을 설명하는 딥페이크 교육 영상입니다. 아이들 역사 공부에 최고!", reportReason: "딥페이크 기술 오용 가능성", choices: [{ text: "승인", consequences: { trust: +5, users: +10, revenue: +5 }, explanation: "기술의 긍정적 활용 사례로 주목받아 사용자들에게 좋은 반응을 얻었습니다." },{ text: "판단 보류", consequences: { trust: -10, users: 0, revenue: 0 }, explanation: "딥페이크 기술에 대한 명확한 가이드라인이 없어 혼란을 야기했고, 신뢰도가 하락했습니다." }] },
+    { id: 10, user: "소규모창작자", content: "제 글이 계속 노출이 안됩니다! 이 플랫폼은 대형 계정만 밀어주고, 저희 같은 작은 목소리는 묵살하고 있어요! #알고리즘 #불공정", reportReason: "플랫폼 정책 비판", choices: [{ text: "승인", consequences: { trust: +10, users: -5, revenue: 0 }, explanation: "비판을 수용하는 투명한 플랫폼이라는 인상을 주었지만, 이와 유사한 불만 게시물이 늘어났습니다." },{ text: "삭제", consequences: { trust: -15, users: -15, revenue: 0 }, explanation: "비판을 검열한다는 인식을 주어 많은 창작자들이 플랫폼을 떠났습니다." }] },
+    { id: 11, user: "풍자뉴스통신", content: "충격! 정부, '숨쉬기세' 도입 검토... 국민 1인당 월 1만 원 부과 예정 #세금폭탄 #뉴스", reportReason: "가짜뉴스", choices: [{ text: "승인", consequences: { trust: +5, users: +5, revenue: 0 }, explanation: "풍자를 이해한 사용자들은 즐거워했지만, 일부는 실제 뉴스로 오해하여 혼란이 있었습니다. 표현의 자유를 존중한 좋은 결정입니다." },{ text: "삭제", consequences: { trust: -15, users: -10, revenue: -5 }, explanation: "풍자를 가짜뉴스로 판단하고 삭제하여 '유머 감각 없는 플랫폼'이라는 비판과 함께 표현의 자유를 억압한다는 비난을 받았습니다." }] },
+    { id: 12, user: "열혈토론가", content: "현 정부의 부동산 정책은 완전히 실패했습니다. 서민들의 내 집 마련 꿈을 앗아가는 정책에 강력히 반대합니다. #정치 #부동산", reportReason: "정치적 선동", choices: [{ text: "승인", consequences: { trust: +10, users: +5, revenue: 0 }, explanation: "혐오 발언이 아닌 정당한 비판과 의견 표출의 자유를 보장하여 플랫폼의 신뢰도가 상승했습니다." },{ text: "삭제", consequences: { trust: -20, users: -15, revenue: -5 }, explanation: "특정 정치적 입장을 검열했다는 비판을 받으며 많은 사용자들이 '편향된 플랫폼'이라며 떠났습니다." }] },
+    { id: 13, user: "예술을사랑한소믈리에", content: "미켈란젤로의 '다비드상'은 인체 표현의 정수입니다. 이 완벽한 조각을 보세요. #예술 #르네상스 #다비드상", reportReason: "선정적인 콘텐츠", choices: [{ text: "승인", consequences: { trust: +10, users: +5, revenue: 0 }, explanation: "예술 작품을 음란물과 구분하는 현명한 판단입니다. 예술 커뮤니티로부터 지지를 받았습니다." },{ text: "삭제", consequences: { trust: -15, users: -10, revenue: -10 }, explanation: "예술 작품을 외설로 판단하고 삭제하여 무지하다는 비판을 받았고, 예술 분야 광고주들이 떠났습니다." }] },
+    { id: 14, user: "내부고발자77", content: "제가 다니는 '메가코프'가 신제품의 심각한 결함을 알고도 숨기고 있습니다. 곧 출시될 '스마트워치X'를 조심하세요.", reportReason: "미확인 사실 유포", choices: [{ text: "판단 보류", consequences: { trust: +10, users: 0, revenue: -5 }, explanation: "섣불리 판단하지 않고 추가 검토를 결정했습니다. 메가코프는 광고를 잠시 보류했지만, 신중한 결정으로 신뢰도는 지켰습니다." },{ text: "삭제", consequences: { trust: -20, users: -10, revenue: +5 }, explanation: "내부고발을 억압하고 대기업의 편을 들었다는 비판을 받으며 플랫폼의 신뢰도가 크게 하락했습니다." }] },
+    { id: 15, user: "깐깐한리뷰어", content: "광고만 요란했던 '갤럭시모터스'의 신차 '퓨처카', 일주일 타보니 연비 최악에 소음까지... 절대 사지 마세요. #자동차리뷰 #솔직후기", reportReason: "광고주에 대한 악의적 비방", choices: [{ text: "승인", consequences: { trust: +15, users: +5, revenue: -15 }, explanation: "광고주로부터 항의를 받아 수익은 감소했지만, 솔직한 리뷰를 존중하여 사용자들의 신뢰를 얻었습니다." },{ text: "삭제", consequences: { trust: -20, users: -15, revenue: +5 }, explanation: "광고주를 위해 소비자의 목소리를 막았다는 비판을 받으며, 많은 사용자들이 플랫폼을 떠났습니다." }] }
+];
+
+const App = () => {
+    const [gameState, setGameState] = useState('start'); // start, tutorial, playing, end
+    const [stats, setStats] = useState({ trust: 50, users: 50, revenue: 50 });
+    const [day, setDay] = useState(0);
+    const [shuffledCases, setShuffledCases] = useState([]);
+    const [currentCase, setCurrentCase] = useState(null);
+    const [feedback, setFeedback] = useState({ show: false, message: '', consequences: null });
+    const [endMessage, setEndMessage] = useState({ title: '', reason: '' });
+
+    // --- 브라우저 탭 제목 설정 ---
+    useEffect(() => {
+        document.title = "모더레이터 딜레마";
+    }, []);
+
+    useEffect(() => {
+        if (gameState === 'playing' && day < shuffledCases.length) {
+            setCurrentCase(shuffledCases[day]);
+        } else if (gameState === 'playing' && day >= shuffledCases.length) {
+            setGameState('end');
+            setEndMessage({ title: '임무 완료!', reason: '당신은 15일간의 시용 기간을 무사히 마쳤습니다. 당신의 판단 덕분에 ConnectSphere는 더 나은 공간이 되었습니다.' });
+        }
+    }, [gameState, day, shuffledCases]);
+
+    useEffect(() => {
+        if (gameState !== 'playing') return;
+
+        if (stats.trust <= 0) {
+            setGameState('end');
+            setEndMessage({ title: '신뢰도 파산!', reason: '플랫폼의 신뢰도가 0%가 되었습니다. 아무도 이곳의 정보를 믿지 않으며, 가짜뉴스의 온상이 되었습니다.' });
+        } else if (stats.users <= 0) {
+            setGameState('end');
+            setEndMessage({ title: '사용자 이탈!', reason: '모든 사용자가 떠났습니다. 혐오와 비방이 가득한 이곳에 남은 사람은 아무도 없습니다.' });
+        } else if (stats.revenue <= 0) {
+            setGameState('end');
+            setEndMessage({ title: '수익 파산!', reason: '모든 광고주가 떠나고 서버 유지 비용을 감당할 수 없게 되었습니다. 서비스가 곧 종료됩니다.' });
+        }
+    }, [stats, gameState]);
+
+    const initializeGame = () => {
+        setDay(0);
+        setStats({ trust: 50, users: 50, revenue: 50 });
+        setShuffledCases([...gameCases].sort(() => 0.5 - Math.random()));
+        setGameState('playing');
+        setFeedback({ show: false, message: '', consequences: null });
+    };
+
+    const handleChoice = (choice) => {
+        const newStats = {
+            trust: Math.max(0, Math.min(100, stats.trust + choice.consequences.trust)),
+            users: Math.max(0, Math.min(100, stats.users + choice.consequences.users)),
+            revenue: Math.max(0, Math.min(100, stats.revenue + choice.consequences.revenue)),
+        };
+        setStats(newStats);
+        setFeedback({ show: true, message: choice.explanation, consequences: choice.consequences });
+    };
+
+    const nextDay = () => {
+        setFeedback({ show: false, message: '', consequences: null });
+        setDay(d => d + 1);
+    };
+
+    const StatBar = ({ icon, label, value, change }) => {
+        const color = value > 50 ? 'bg-green-500' : value > 20 ? 'bg-yellow-500' : 'bg-red-500';
+        const changeColor = change > 0 ? 'text-green-400' : change < 0 ? 'text-red-400' : 'text-gray-400';
+        const changeSymbol = change > 0 ? '▲' : change < 0 ? '▼' : '';
+
+        return (
+            <div className="bg-gray-700 p-3 rounded-lg flex items-center">
+                <Icon name={icon} className="w-8 h-8 text-indigo-400" />
+                <div className="ml-4 flex-grow">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-white">{label}</span>
+                        <span className={`font-semibold ${change ? 'hidden' : ''}`}>{value}%</span>
+                        {change && (
+                            <span className={`font-bold text-lg ${changeColor}`}>{changeSymbol} {Math.abs(change)}%</span>
+                        )}
+                    </div>
+                    <div className="w-full bg-gray-600 rounded-full h-2.5">
+                        <div className={`${color} h-2.5 rounded-full`} style={{ width: `${value}%`, transition: 'width 0.5s ease-in-out' }}></div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    if (gameState === 'start') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+                <h1 className="text-5xl font-extrabold text-indigo-400 mb-4">모더레이터 딜레마</h1>
+                <p className="text-xl text-gray-300 mb-8 max-w-2xl text-center">당신은 소셜 미디어 'ConnectSphere'의 신입 콘텐츠 관리자입니다. 당신의 결정이 플랫폼의 미래를 좌우합니다. 신중하게 판단하세요.</p>
+                <button onClick={() => setGameState('tutorial')} className="px-10 py-4 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-transform transform hover:scale-105">
+                    업무 시작하기
+                </button>
+                 <footer className="text-gray-500 text-sm mt-12 absolute bottom-8">
+                    Copyright © (주)제이에스에듀랩, JSPARK. All Rights Reserved.
+                </footer>
+            </div>
+        );
+    }
+    
+    if (gameState === 'tutorial') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+                <div className="max-w-2xl w-full bg-gray-800 p-8 rounded-2xl shadow-2xl">
+                    <h2 className="text-3xl font-bold text-indigo-400 mb-6 text-center">게임 방법 안내</h2>
+                    <div className="space-y-4 text-gray-300">
+                        <p>이 게임의 핵심은 <strong className="text-yellow-400">정답이 없는 회색지대의 문제</strong>를 다룬다는 점입니다.</p>
+                        <ul className="list-disc list-inside space-y-2 pl-4">
+                            <li><strong className="text-white">'신고 사유'는 항상 옳은 것이 아닙니다.</strong> 그것은 단지 누군가의 '주장'일 뿐입니다. 당신은 그 주장이 타당한지, 아니면 표현의 자유나 예술의 가치를 훼손하는 부당한 신고인지를 스스로 판단해야 합니다.</li>
+                            <li><strong className="text-white">'현명한 판단'이라는 피드백</strong>은 당신의 결정이 플랫폼을 더 건강하고 신뢰도 높게 만드는 방향이었음을 의미합니다. 때로는 수익이 조금 줄더라도 신뢰도를 지키는 것이 더 '현명한 판단'일 수 있습니다.</li>
+                            <li>때로는 '판단 보류' 없이 '승인'과 '삭제'만 선택해야 하는 <strong className="text-yellow-400">긴급한 상황</strong>에 놓이기도 합니다. 각 사건의 맥락을 파악하는 것이 중요합니다.</li>
+                        </ul>
+                        <p>결론적으로, 이 게임은 단순히 신고 내용에 따라 기계적으로 삭제/승인을 누르는 것이 아니라, 각각의 상황이 가진 복잡한 맥락을 이해하고, 당신의 결정이 가져올 파급효과(<strong className="text-green-400">신뢰도</strong>, <strong className="text-blue-400">사용자</strong>, <strong className="text-yellow-400">수익</strong>의 변화)까지 고려하여 최선의 선택을 내리는 것을 목표로 합니다.</p>
+                    </div>
+                    <div className="text-center mt-8">
+                        <button onClick={initializeGame} className="px-10 py-4 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition-transform transform hover:scale-105">
+                            모두 이해했습니다. 게임 시작!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (gameState === 'end') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+                <h1 className="text-5xl font-extrabold text-red-500 mb-4">{endMessage.title}</h1>
+                <p className="text-xl text-gray-300 mb-8 max-w-2xl text-center">{endMessage.reason}</p>
+                <div className="w-full max-w-md space-y-4 mb-8">
+                    <StatBar icon="trust" label="최종 신뢰도" value={stats.trust} />
+                    <StatBar icon="users" label="최종 사용자" value={stats.users} />
+                    <StatBar icon="revenue" label="최종 수익" value={stats.revenue} />
+                </div>
+                <button onClick={() => setGameState('start')} className="px-10 py-4 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-transform transform hover:scale-105">
+                    다시 시작하기
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-8">
+            <div className="max-w-4xl mx-auto">
+                <header className="mb-8">
+                    <h1 className="text-3xl font-bold text-indigo-400 text-center">ConnectSphere 관리자 대시보드</h1>
+                    <p className="text-center text-gray-400">DAY {day + 1} / 15</p>
+                </header>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <StatBar icon="trust" label="신뢰도" value={stats.trust} />
+                    <StatBar icon="users" label="사용자" value={stats.users} />
+                    <StatBar icon="revenue" label="수익" value={stats.revenue} />
+                </div>
+
+                {currentCase && (
+                    <div className="bg-gray-800 rounded-2xl shadow-2xl p-6">
+                        <div className="flex items-center mb-4">
+                            <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mr-4">
+                               <Icon name="user" className="w-8 h-8 text-gray-400"/>
+                            </div>
+                            <span className="font-bold text-lg">{currentCase.user}</span>
+                        </div>
+                        <p className="text-gray-300 text-lg mb-4 whitespace-pre-wrap">{currentCase.content}</p>
+                        
+                        {!feedback.show && (
+                            <div className="flex justify-center gap-4 mt-6">
+                                {currentCase.choices.map(choice => (
+                                    <button key={choice.text} onClick={() => handleChoice(choice)} className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-transform transform hover:scale-105 w-full md:w-auto">
+                                        {choice.text}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {feedback.show && (
+                    <div className="mt-6 bg-gray-800 rounded-2xl p-6 animate-fade-in">
+                        <h3 className="text-xl font-bold mb-2 text-center">결과 분석</h3>
+                        <div className="text-sm text-center text-red-400 bg-red-900/50 p-3 rounded-lg mb-4">
+                            <strong>신고 사유:</strong> {currentCase.reportReason}
+                        </div>
+                        <p className="text-center text-gray-300 mb-6">{feedback.message}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <StatBar icon="trust" label="신뢰도" value={stats.trust} change={feedback.consequences.trust} />
+                           <StatBar icon="users" label="사용자" value={stats.users} change={feedback.consequences.users} />
+                           <StatBar icon="revenue" label="수익" value={stats.revenue} change={feedback.consequences.revenue} />
+                        </div>
+                        <div className="text-center mt-6">
+                            <button onClick={nextDay} className="px-8 py-3 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition-transform transform hover:scale-105">
+                                다음 업무로
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default App;
